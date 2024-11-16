@@ -8,7 +8,7 @@ model = InferenceClient(
 
 
 class Agent:
-    def __init__(self,token="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",max_tokens=100,temperature=0.1):
+    def __init__(self,token,max_tokens=100,temperature=0.1):
         """
         Initializes an Agent object with the given Hugging Face API token, maximum number of response tokens, and response temperature.
         

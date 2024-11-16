@@ -9,6 +9,7 @@ readme = "README.md"
 python = "^3.11"
 huggingface-hub = "^0.26.1"
 ipykernel = "^6.29.5"
+python-dotenv = "^1.0.1"
 
 
 [build-system]
