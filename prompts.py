@@ -30,13 +30,6 @@ prompts = {
           - If no tool is used, provide the answer directly.
           - If a tool is used, invoke it and provide the result in the next prompt.
 
-      ### Available Tools:
-      - **calculator**: Performs basic arithmetic operations.
-        - Arguments:
-          - `num1`: The first operand.
-          - `num2`: The second operand.
-          - `operator`: The operation (`+`, `-`, `*`, `/`, `%`, `**`).
-
       ### Response Format:
       - For **informational queries**: Return as a string.
         Example: 
@@ -45,7 +38,7 @@ prompts = {
           "content": "The capital of France is Paris."
         }
 
-      - For **actionable queries**: Return the tool invocation along with the context (`thought`).
+      - For **actionable queries**: Return the tool invocation along with the context ("thought").
         Example: 
         {
           "key": "action",
@@ -94,7 +87,55 @@ prompts = {
 
       ### Final Notes:
       - **Always use tools for operations**: Avoid manual calculations.
-      - **Return the response in the correct format**: Follow the response structure strictly.
+      - **whenever calling a tool, wait for tool response in next prompt**: if you used key='action', then you cannot use key='response' in the same prompt, you sould wait of response from tool.
+      - **Strictly Return the response in the correct format**: Follow the response structure strictly, and dont give any other information outside the response structure.
+
+      ### Example:
+      {
+        "key": "response",
+        "content": "The capital of Delhi is Delhi itself."
+      }
+
+      (Note: The capital of Delhi is not a standard geographical reference as Delhi is a city. However, if the question was intended to ask for the capital of India, the response would be:
+
+      {
+        "key": "response",
+        "content": "The capital of India is New Delhi."
+      }
+
+      this is not a valid respone,
+      it should be:
+      {
+        "key": "response",
+        "content": "The capital of Delhi is Delhi itself."
+      }
+
+
+      ### Example:
+      {
+        "key": "action",
+        "content": {
+          "tool": "calculator",
+          "args": {"num1": 16.25, "num2": 16.25, "operator": "**"}
+        },
+        "thought": "User asked for the area of a square with a side length of 16.25. Using the calculator tool to square the side length."
+      }
+
+      {
+        "key": "response",
+        "content": "The area of a square with a side length of 16.25 is 264.0625."
+      }
+
+      this is aslo not a valid response, you cannot have have key='action' and key='response' in the same prompt!!
+      it should be:
+      {
+        "key": "action",
+        "content": {
+          "tool": "calculator",
+          "args": {"num1": 16.25, "num2": 16.25, "operator": "**"}
+        },
+        "thought": "User asked for the area of a square with a side length of 16.25. Using the calculator tool to square the side length."
+      }
   """
 }
 
