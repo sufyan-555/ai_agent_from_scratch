@@ -1,4 +1,4 @@
-from huggingface_hub import InferenceClient,InferenceEndpoint
+from huggingface_hub import InferenceClient
 import json as json
 from prompts import system_prompt as system_prompt
 
@@ -16,6 +16,7 @@ class Agent:
         try:
             self.model =InferenceClient(
             model = "microsoft/Phi-3.5-mini-instruct",
+            #model="mistralai/Mistral-7B-Instruct-v0.3",
             token = token)
         except Exception as e:
             print(f"Error: Could not create inference client. {e}")
@@ -83,7 +84,7 @@ class Agent:
                 args = out['content']['args']
                 tool = self.tools[tool_name]
                 response = tool(**args)
-                self.chat.append({'role': 'user', 'content': response})
+                query = response
                 iteration += 1
 
                 if verbose:
