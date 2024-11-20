@@ -5,10 +5,9 @@ from tools import calculator
 load_dotenv()
 api = os.environ['hf_api']
 
-tools = [{
-    "tool_name": "calculator",
-    "tool": calculator
-}]
+tools = {
+    "calculator": calculator
+}
 
 agent = Agent(token=api, tools=tools,)
 
@@ -20,7 +19,7 @@ print()
 print(agent.get_chats())
 print("=======================================")
 
-query = "what is area of sqare of side lenght 16.25"
+query = "what is 125 times 165?"
 out = agent.ask(query,verbose=True)
 
 print(out)

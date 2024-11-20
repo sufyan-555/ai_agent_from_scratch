@@ -1,15 +1,9 @@
-from huggingface_hub import InferenceClient
+from huggingface_hub import InferenceClient,InferenceEndpoint
 import json as json
 from prompts import system_prompt as system_prompt
 
-model = InferenceClient(
-    model = "microsoft/Phi-3.5-mini-instruct",
-    token = "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"
-)
-
-
 class Agent:
-    def __init__(self,token,max_tokens=100,temperature=0.1,tools=None):
+    def __init__(self,token,max_tokens=150,temperature=0.1,tools=None):
         """
         Initializes an Agent object with the given Hugging Face API token, maximum number of response tokens, and response temperature.
         
@@ -17,7 +11,7 @@ class Agent:
             token (str): Hugging Face API token. Defaults to the token used in the example.
             max_tokens (int): Maximum number of tokens in the response. Defaults to 100.
             temperature (float): Response temperature. Defaults to 0.1.
-            tools (list): List of tools to use passed as [{'tool_name1': tool1,...}]. Defaults to None.
+            tools (dict): List of tools to use passed as {'tool_name1': tool1,...} Defaults to None.
         """
         try:
             self.model =InferenceClient(
@@ -72,12 +66,20 @@ class Agent:
             except Exception as e:
                 print("Response Error")
                 print(out)
+                print("!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!")
                 raise e
-            self.chat.append({'role': 'assistant', 'content': str(out)})
+            
+            ## added replace because the json object have '' in the string and the model picks that up from the
+            ## chat history and gives '' in repsonse, beacuse of which the json.loads fails, so making it "" model will be able to follow the
+            ## pattern better.
+            self.chat.append({'role': 'assistant', 'content': str(out).replace("'",'"')})
 
             if out['key'] == 'action':
                 # handlling tool call
                 tool_name = out['content']['tool']
+                if tool_name not in self.tools.keys():
+                    self.chat.append({'role': 'user', 'content': f"Tool {tool_name} not found"})
+                    continue
                 args = out['content']['args']
                 tool = self.tools[tool_name]
                 response = tool(**args)

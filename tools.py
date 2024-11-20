@@ -7,7 +7,7 @@ def calculator(num1, num2, operator):
         - num1 (str or int): The first number.
         - num2 (str or int): The second number.
         - operator (str): The operator to perform ('+', '-', '*', '/', '%', '**').
-    Returns: result of the calculation.
+    Returns: result of the calculation as string.
 
     Example action for using this tool:
     {"key": "action","content": {"tool": "calculator", "args": {"num1": 125, "num2": 165, "operator": "*"}}}
@@ -27,7 +27,7 @@ def calculator(num1, num2, operator):
             operation = "multiplication"
         elif operator == "/":
             if num2 == 0:
-                return {"result": None, "message": "Error: Division by zero"}
+                return f"result from tool: None, message: Error: Division by zero"
             result = num1 / num2
             operation = "division"
         elif operator == "%":
@@ -37,12 +37,9 @@ def calculator(num1, num2, operator):
             result = num1 ** num2
             operation = "exponentiation"
         else:
-            return {"result": None, "message": "Invalid operator"}
+            return f"result from tool: None, message: Invalid operator"
 
-        return {
-            "result": result,
-            "message": f"The result of {num1} {operation} {num2} is: {result}"
-        }
+        return f"result from tool: {result}, message: The result of {num1} {operation} {num2} is: {result}"
 
     except ValueError:
-        return {"result": None, "message": "Invalid input: please enter valid numbers."}
+        return f"result from tool: None, message: Invalid input: please enter valid numbers."
