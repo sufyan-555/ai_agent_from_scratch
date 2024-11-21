@@ -3,7 +3,7 @@ import json as json
 from prompts import system_prompt as system_prompt
 
 class Agent:
-    def __init__(self,token,max_tokens=150,temperature=0.1,tools=None):
+    def __init__(self, token, max_tokens=150, temperature=0.1, tools=None):
         """
         Initializes an Agent object with the given Hugging Face API token, maximum number of response tokens, and response temperature.
         
@@ -14,10 +14,10 @@ class Agent:
             tools (dict): List of tools to use passed as {'tool_name1': tool1,...} Defaults to None.
         """
         try:
-            self.model =InferenceClient(
-            model = "microsoft/Phi-3.5-mini-instruct",
-            #model="mistralai/Mistral-7B-Instruct-v0.3",
-            token = token)
+            self.model = InferenceClient(
+                model="microsoft/Phi-3.5-mini-instruct",
+                token=token
+            )
         except Exception as e:
             print(f"Error: Could not create inference client. {e}")
             raise e
@@ -26,6 +26,7 @@ class Agent:
         self.temperature = temperature
         self.chat = [{'role': 'system', 'content': self.system_prompt}]
         self.tools = tools
+        self.verbose_logs = []  # Collect verbose logs for the UI
     
     def get_chats(self):
         """
@@ -36,50 +37,49 @@ class Agent:
         """
         return self.chat[1:]
 
-    def ask(self,query,max_iter=5,verbose=True):
+    def ask(self, query, max_iter=5, verbose=True):
         """
         Asks the AI agent a question and returns its response.
 
         Args:
             query (str): The question to ask the AI agent.
-            max_iter (int): (defautls to 5) The maximum no of times the agent will go in a thought loop
-            verbose (bool): (defautls to True) Whether to print the thought loop
+            max_iter (int): (defaults to 5) The maximum no of times the agent will go in a thought loop
+            verbose (bool): (defaults to True) Whether to collect the verbose logs
 
         Returns:
             response object
         """
         iteration = 0
-        while iteration < max_iter:
+        self.verbose_logs = []  # Reset verbose logs for each interaction
 
+        while iteration < max_iter:
             if len(self.chat) > 20:
                 self.chat = self.chat[10:]
 
             self.chat.append({'role': 'user', 'content': query})
             response = self.model.chat_completion(
-                messages = self.chat,
-                temperature = 0,
-                max_tokens= 500
+                messages=self.chat,
+                temperature=self.temperature,
+                max_tokens=self.max_tokens
             )
 
             out = response.choices[0].message.content
             try:
                 out = json.loads(out)
             except Exception as e:
-                print("Response Error")
-                print(out)
-                print("!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!")
+                error_message = f"Response Error: {out}"
+                self.verbose_logs.append(error_message)
                 raise e
             
-            ## added replace because the json object have '' in the string and the model picks that up from the
-            ## chat history and gives '' in repsonse, beacuse of which the json.loads fails, so making it "" model will be able to follow the
-            ## pattern better.
-            self.chat.append({'role': 'assistant', 'content': str(out).replace("'",'"')})
+            self.chat.append({'role': 'assistant', 'content': str(out).replace("'", '"')})
 
             if out['key'] == 'action':
-                # handlling tool call
+                # Handling tool call
                 tool_name = out['content']['tool']
                 if tool_name not in self.tools.keys():
-                    self.chat.append({'role': 'user', 'content': f"Tool {tool_name} not found"})
+                    tool_error = f"Tool {tool_name} not found"
+                    self.chat.append({'role': 'user', 'content': tool_error})
+                    self.verbose_logs.append(tool_error)
                     continue
                 args = out['content']['args']
                 tool = self.tools[tool_name]
@@ -88,22 +88,20 @@ class Agent:
                 iteration += 1
 
                 if verbose:
-                    print("Calling tool")
-                    print(f"Tool: {tool_name}")
-                    print(f"Args: {args}")
-                    print(f"Thought: {out['thought']}")
-                    print(f"Tool Response: {response}")
+                    self.verbose_logs.append(f"Calling tool: {tool_name}")
+                    self.verbose_logs.append(f"Args: {args}")
+                    self.verbose_logs.append(f"Thought: {out['thought']}")
+                    self.verbose_logs.append(f"Tool Response: {response}")
                 
-            elif ((out['key'] == 'response') & (out['content'] != None)):
+            elif out['key'] == 'response' and out['content'] is not None:
                 if verbose:
-                    print(f"Final response: {out['content']}")
+                    self.verbose_logs.append(f"Final response: {out['content']}")
                 return out['content']
             else:
                 if verbose:
-                    print(f"Final response: {out}")
+                    self.verbose_logs.append(f"Final response: {out}")
                 return out
 
-        print("Max iteration reached")
-        return self.chat[-1]  
-            
-    
+        final_message = "Max iteration reached"
+        self.verbose_logs.append(final_message)
+        return self.chat[-1]
